@@ -42,10 +42,10 @@ class Table extends BaseTable
     protected function getUsedClasses()
     {
         $uses = array(
-            'Zend\InputFilter\InputFilter',
-            'Zend\InputFilter\Factory as InputFactory',
-            'Zend\InputFilter\InputFilterAwareInterface',
-            'Zend\InputFilter\InputFilterInterface',
+            'Laminas\InputFilter\InputFilter',
+            'Laminas\InputFilter\Factory as InputFactory',
+            'Laminas\InputFilter\InputFilterAwareInterface',
+            'Laminas\InputFilter\InputFilterInterface',
         );
 
         return array_merge(parent::getUsedClasses(), $uses);
