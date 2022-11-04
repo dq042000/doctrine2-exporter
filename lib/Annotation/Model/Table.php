@@ -236,6 +236,12 @@ class Table extends BaseTable
         }
 
         $comment = $this->getComment();
+        $commentDb = $this->getComment(false);
+        if ($commentDb) {
+            $options = ["comment" => $commentDb, "collate" => "utf8mb4_unicode_ci", "charset" => "utf8mb4"];
+        } else {
+            $options = [];
+        }
         $writer
             ->open($this->getClassFileName($extendableEntity ? true : false))
             ->write('<?php')
@@ -266,7 +272,7 @@ class Table extends BaseTable
             ->writeIf(!$extendableEntity,
                     ' * '.$this->getAnnotation('Entity', array('repositoryClass' => $this->getConfig()->get(Formatter::CFG_AUTOMATIC_REPOSITORY) ? $repositoryNamespace.$this->getModelName().'Repository' : null)))
             ->writeIf($cacheMode, ' * '.$this->getAnnotation('Cache', array($cacheMode)))
-            ->write(' * '.$this->getAnnotation('Table', array('name' => $this->quoteIdentifier($this->getRawTableName()), 'indexes' => $this->getIndexesAnnotation('Index'), 'uniqueConstraints' => $this->getIndexesAnnotation('UniqueConstraint'))))
+            ->write(' * '.$this->getAnnotation('Table', array('name' => $this->quoteIdentifier($this->getRawTableName()), 'indexes' => $this->getIndexesAnnotation('Index'), 'uniqueConstraints' => $this->getIndexesAnnotation('UniqueConstraint'), 'options' => $options)))
             ->writeIf($extendableEntityHasDiscriminator,
                     ' * '.$this->getAnnotation('InheritanceType', array('SINGLE_TABLE')))
             ->writeIf($extendableEntityHasDiscriminator,
