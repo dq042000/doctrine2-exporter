@@ -156,6 +156,7 @@ class Column extends BaseColumn
      */
     public function asAnnotation()
     {
+        $comment = $this->getComment(false);
         $columnName = $this->getColumnName(false);
         $attributes = array(
             'name' => ($quotedColumnName = $this->getTable()->quoteIdentifier($this->getColumnName())) !== $columnName ? $quotedColumnName : null,
@@ -184,6 +185,10 @@ class Column extends BaseColumn
         $rawDefaultValue = $this->parameters->get('defaultValue') == 'NULL' ? null : $this->parameters->get('defaultValue');
         if ($rawDefaultValue !== '') {
             $attributes['options']['default'] = $rawDefaultValue === '' ? null : $rawDefaultValue;
+        }
+
+        if ($comment) {
+            $attributes['options']['comment'] = $comment;
         }
 
         if (count($attributes['options']) == 0) {
