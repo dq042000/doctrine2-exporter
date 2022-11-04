@@ -60,7 +60,7 @@ class Formatter extends BaseFormatter
             static::CFG_SKIP_GETTER_SETTER                  => false,
             static::CFG_GENERATE_ENTITY_SERIALIZATION       => true,
             static::CFG_GENERATE_EXTENDABLE_ENTITY          => false,
-            static::CFG_EXTENDABLE_ENTITY_HAS_DISCRIMINATOR => true,
+            static::CFG_EXTENDABLE_ENTITY_HAS_DISCRIMINATOR => false,
             static::CFG_QUOTE_IDENTIFIER_STRATEGY           => static::QUOTE_IDENTIFIER_AUTO,
             static::CFG_EXTENDS_CLASS                       => '',
             static::CFG_USE_BEHAVIORAL_EXTENSIONS           => false,
