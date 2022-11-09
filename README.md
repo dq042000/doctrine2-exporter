@@ -1,6 +1,6 @@
 # README
 
-This is an exporter to convert [MySQL Workbench](http://www.mysql.com/products/workbench/) Models (\*.mwb) to a Doctrine 2 Schema.
+This is an exporter to convert [MySQL Workbench](http://www.mysql.com/products/workbench/) Models (\*.mwb) to a Doctrine 2 Schema and upgraded to support Laminas.
 
 ## Prerequisites
 
