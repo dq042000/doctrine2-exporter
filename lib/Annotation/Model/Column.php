@@ -65,6 +65,9 @@ class Column extends BaseColumn
             $isBehavioralColumn = strstr($this->getTable()->getName(), '_img') && $useBehavioralExtensions;
             $comment = $this->getComment();
             $columnName = $this->getColumnName(false);
+            if (strpos($comment, "@Encrypted")) {
+                $comment = explode("@Encrypted", $comment)[0];
+            }
             $writer
                 ->write('/**')
                 ->writeIf($comment, $comment)
@@ -188,6 +191,9 @@ class Column extends BaseColumn
         }
 
         if ($comment) {
+            if (strpos($comment, "@Encrypted")) {
+                $comment = explode("@Encrypted", $comment)[0];
+            }
             $attributes['options']['comment'] = $comment;
         }
 
@@ -196,6 +202,23 @@ class Column extends BaseColumn
         }
 
         return $attributes;
+    }
+
+    /**
+     * @return string
+     */
+    public function asEncrypted()
+    {
+        $encrypted = null;
+        $comment = $this->getComment(false);
+        if ($comment) {
+            if (strpos($comment, "@Encrypted")) {
+                $comment = explode("@Encrypted", $comment)[1];
+                $encrypted = "@Encrypted" . $comment;
+            }
+        }
+
+        return $encrypted;
     }
 
     protected function typehint($type, $nullable)
