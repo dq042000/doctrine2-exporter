@@ -2,6 +2,13 @@
 
 This is an exporter to convert [MySQL Workbench](http://www.mysql.com/products/workbench/) Models (\*.mwb) to a Doctrine 2 Schema and upgraded to support Laminas.
 
+![image](https://user-images.githubusercontent.com/7939291/204090110-6ceef03b-efc1-4c13-906e-2dbc9a3dceec.png)
+
+![image](https://user-images.githubusercontent.com/7939291/204090125-170d97f7-e7ae-4107-849c-b6c60645a562.png)
+
+![image](https://user-images.githubusercontent.com/7939291/204090273-7993a675-ee29-4e80-adfa-72ee0ff1c702.png)
+
+
 ## Prerequisites
 
   * PHP 5.4+
