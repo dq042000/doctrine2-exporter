@@ -78,6 +78,8 @@ class Column extends BaseColumn
                 ->writeIf($useBehavioralExtensions && $this->getColumnName() === 'updated_at',
                         ' * @Gedmo\Timestampable(on="update")')
                 ->write(' * '.$this->getTable()->getAnnotation('Column', $this->asAnnotation()))
+                ->writeIf($this->asEncrypted() !== null,
+                        ' * '.$this->asEncrypted())
                 ->writeIf($this->isAutoIncrement(),
                         ' * '.$this->getTable()->getAnnotation('GeneratedValue', array('strategy' => strtoupper($this->getConfig()->get(Formatter::CFG_GENERATED_VALUE_STRATEGY)))))
                 ->writeIf($isBehavioralColumn && strstr($this->getColumnName(), 'path'),
