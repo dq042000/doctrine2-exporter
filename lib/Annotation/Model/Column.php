@@ -218,7 +218,7 @@ class Column extends BaseColumn
         $encrypted = null;
         $comment = $this->getComment(false);
         if ($comment) {
-            if (strpos($comment, "@Encrypted")) {
+            if (strpos($comment, "@Encrypted") !== false) {
                 $comment = explode("@Encrypted", $comment)[1];
                 $encrypted = "@Keet\Encrypt\Annotation\Encrypted" . $comment;
             }
@@ -235,7 +235,7 @@ class Column extends BaseColumn
         $hashed = null;
         $comment = $this->getComment(false);
         if ($comment) {
-            if (strpos($comment, "@Hashed")) {
+            if (strpos($comment, "@Hashed") !== false) {
                 $comment = explode("@Hashed", $comment)[1];
                 $hashed = "@Keet\Encrypt\Annotation\Hashed" . $comment;
             }
