@@ -65,7 +65,7 @@ class Column extends BaseColumn
             $isBehavioralColumn = strstr($this->getTable()->getName(), '_img') && $useBehavioralExtensions;
             $comment = $this->getComment();
             $columnName = $this->getColumnName(false);
-            $fix_comment = str_replace(['@Encrypted', '@Hashed'], '', $comment);
+            $fix_comment = $comment ? str_replace(['@Encrypted', '@Hashed'], '', $comment) : '';
             if ($fix_comment != $comment) {
                 $comment = $fix_comment;
             }
@@ -218,7 +218,7 @@ class Column extends BaseColumn
         $encrypted = null;
         $comment = $this->getComment(false);
         if ($comment) {
-            if (strpos($comment, "@Encrypted") !== false) {
+            if (strpos($comment, "@Encrypted")) {
                 $comment = explode("@Encrypted", $comment)[1];
                 $encrypted = "@Keet\Encrypt\Annotation\Encrypted" . $comment;
             }
@@ -235,7 +235,7 @@ class Column extends BaseColumn
         $hashed = null;
         $comment = $this->getComment(false);
         if ($comment) {
-            if (strpos($comment, "@Hashed") !== false) {
+            if (strpos($comment, "@Hashed")) {
                 $comment = explode("@Hashed", $comment)[1];
                 $hashed = "@Keet\Encrypt\Annotation\Hashed" . $comment;
             }

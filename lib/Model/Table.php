@@ -62,7 +62,7 @@ class Table extends BaseTable
      */
     public function getEntityCacheMode()
     {
-        $cacheMode = strtoupper(trim($this->parseComment('cache')));
+        $cacheMode = $this->parseComment('cache') ? strtoupper(trim($this->parseComment('cache'))) : 'NONE';
         if (in_array($cacheMode, array('READ_ONLY', 'NONSTRICT_READ_WRITE', 'READ_WRITE'))) return $cacheMode;
     }
 
@@ -105,7 +105,7 @@ class Table extends BaseTable
     public function getLifecycleCallbacks()
     {
         $result = array();
-        if ($lifecycleCallbacks = trim($this->parseComment('lifecycleCallbacks'))) {
+        if ($this->parseComment('lifecycleCallbacks') and $lifecycleCallbacks = trim($this->parseComment('lifecycleCallbacks'))) {
             foreach (explode("\n", $lifecycleCallbacks) as $callback) {
                 list($method, $handler) = explode(':', $callback, 2);
                 $method = lcfirst(trim($method));
