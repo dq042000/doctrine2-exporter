@@ -3,7 +3,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2012-2014 Toha <tohenk@yahoo.com>
+ * Copyright (c) 2012-2023 Toha <tohenk@yahoo.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,10 @@
 
 namespace MwbExporter\Formatter\Doctrine2\Model;
 
+use MwbExporter\Formatter\Doctrine2\Configuration\BundleNamespace as BundleNamespaceConfiguration;
+use MwbExporter\Formatter\Doctrine2\Configuration\EntityNamespace as EntityNamespaceConfiguration;
+use MwbExporter\Formatter\Doctrine2\Configuration\RelatedVarName as RelatedVarNameConfiguration;
 use MwbExporter\Model\Table as BaseTable;
-use MwbExporter\Formatter\Doctrine2\Formatter;
 
 class Table extends BaseTable
 {
@@ -39,10 +41,10 @@ class Table extends BaseTable
     public function getEntityNamespace()
     {
         $namespace = '';
-        if (($bundleNamespace = $this->parseComment('bundleNamespace')) || ($bundleNamespace = $this->getConfig()->get(Formatter::CFG_BUNDLE_NAMESPACE))) {
+        if (($bundleNamespace = $this->parseComment('bundleNamespace')) || ($bundleNamespace = $this->getConfig(BundleNamespaceConfiguration::class)->getValue())) {
             $namespace = $bundleNamespace.'\\';
         }
-        if ($entityNamespace = $this->getConfig()->get(Formatter::CFG_ENTITY_NAMESPACE)) {
+        if ($entityNamespace = $this->getConfig(EntityNamespaceConfiguration::class)->getValue()) {
             $namespace .= $entityNamespace;
         } else {
             $namespace .= 'Entity';
@@ -51,7 +53,8 @@ class Table extends BaseTable
         return $namespace;
     }
 
-    public function getBaseEntityNamespace() {
+    public function getBaseEntityNamespace()
+    {
         return 'Base\\'.$this->getEntityNamespace();
     }
 
@@ -62,8 +65,10 @@ class Table extends BaseTable
      */
     public function getEntityCacheMode()
     {
-        $cacheMode = $this->parseComment('cache') ? strtoupper(trim($this->parseComment('cache'))) : 'NONE';
-        if (in_array($cacheMode, array('READ_ONLY', 'NONSTRICT_READ_WRITE', 'READ_WRITE'))) return $cacheMode;
+        $cacheMode = strtoupper(trim((string) $this->parseComment('cache')));
+        if (in_array($cacheMode, ['READ_ONLY', 'NONSTRICT_READ_WRITE', 'READ_WRITE'])) {
+            return $cacheMode;
+        }
     }
 
     /**
@@ -104,16 +109,16 @@ class Table extends BaseTable
      */
     public function getLifecycleCallbacks()
     {
-        $result = array();
-        if ($this->parseComment('lifecycleCallbacks') and $lifecycleCallbacks = trim($this->parseComment('lifecycleCallbacks'))) {
+        $result = [];
+        if ($lifecycleCallbacks = trim((string) $this->parseComment('lifecycleCallbacks'))) {
             foreach (explode("\n", $lifecycleCallbacks) as $callback) {
                 list($method, $handler) = explode(':', $callback, 2);
                 $method = lcfirst(trim($method));
-                if (!in_array($method, array('postLoad', 'prePersist', 'postPersist', 'preRemove', 'postRemove', 'preUpdate', 'postUpdate'))) {
+                if (!in_array($method, ['postLoad', 'prePersist', 'postPersist', 'preRemove', 'postRemove', 'preUpdate', 'postUpdate'])) {
                     continue;
                 }
                 if (!isset($result[$method])) {
-                    $result[$method] = array();
+                    $result[$method] = [];
                 }
                 $result[$method][] = trim($handler);
             }
@@ -138,7 +143,7 @@ class Table extends BaseTable
          */
 
         $nameFromCommentTag = '';
-        $relatedNames = trim($this->parseComment('relatedNames'));
+        $relatedNames = trim((string) $this->parseComment('relatedNames'));
 
         if ('' !== $relatedNames) {
             foreach (explode("\n", $relatedNames) as $relationMap) {
@@ -152,7 +157,7 @@ class Table extends BaseTable
         if ($nameFromCommentTag) {
             $name = $nameFromCommentTag;
         } else {
-            $name = $related ? strtr($this->getConfig()->get(Formatter::CFG_RELATED_VAR_NAME_FORMAT), array('%name%' => $name, '%related%' => $related)) : $name;
+            $name = $related ? strtr($this->getConfig(RelatedVarNameConfiguration::class)->getValue(), ['%name%' => $name, '%related%' => $related]) : $name;
         }
 
         return $plural ? $this->pluralize($name) : $name;

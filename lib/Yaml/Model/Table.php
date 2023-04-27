@@ -4,7 +4,7 @@
  * The MIT License
  *
  * Copyright (c) 2010 Johannes Mueller <circus2(at)web.de>
- * Copyright (c) 2012-2014 Toha <tohenk@yahoo.com>
+ * Copyright (c) 2012-2023 Toha <tohenk@yahoo.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,31 +27,46 @@
 
 namespace MwbExporter\Formatter\Doctrine2\Yaml\Model;
 
+use MwbExporter\Configuration\Comment as CommentConfiguration;
+use MwbExporter\Configuration\Header as HeaderConfiguration;
+use MwbExporter\Configuration\Indentation as IndentationConfiguration;
+use MwbExporter\Configuration\Language as LanguageConfiguration;
+use MwbExporter\Configuration\M2MSkip as M2MSkipConfiguration;
+use MwbExporter\Formatter\Doctrine2\Configuration\AutomaticRepository as AutomaticRepositoryConfiguration;
+use MwbExporter\Formatter\Doctrine2\Configuration\RepositoryNamespace as RepositoryNamespaceConfiguration;
+use MwbExporter\Formatter\Doctrine2\Configuration\TableNamePrefix as TableNamePrefixConfiguration;
 use MwbExporter\Formatter\Doctrine2\Model\Table as BaseTable;
-use MwbExporter\Formatter\Doctrine2\Yaml\Formatter;
+use MwbExporter\Helper\Comment;
+use MwbExporter\Object\YAML;
 use MwbExporter\Model\ForeignKey;
 use MwbExporter\Writer\WriterInterface;
-use MwbExporter\Object\YAML;
-use MwbExporter\Helper\Comment;
 
+/**
+ * @method \MwbExporter\Formatter\Doctrine2\Yaml\Formatter getFormatter()
+ */
 class Table extends BaseTable
 {
     public function writeTable(WriterInterface $writer)
     {
         switch (true) {
-            case $this->isExternal(): 
+            case $this->isExternal():
                 return self::WRITE_EXTERNAL;
-
-            case $this->getConfig()->get(Formatter::CFG_SKIP_M2M_TABLES) && $this->isManyToMany():
+            case $this->getConfig(M2MSkipConfiguration::class)->getValue() && $this->isManyToMany():
                 return self::WRITE_M2M;
-
             default:
                 $this->getDocument()->addLog(sprintf('Writing table "%s"', $this->getModelName()));
-
                 $writer
                     ->open($this->getTableFileName())
                     ->writeCallback(function(WriterInterface $writer, Table $_this = null) {
-                        if ($_this->getConfig()->get(Formatter::CFG_ADD_COMMENT)) {
+                        /** @var \MwbExporter\Configuration\Header $header */
+                        $header = $this->getConfig(HeaderConfiguration::class);
+                        if ($content = $header->getHeader()) {
+                            $writer
+                                ->write($_this->getFormatter()->getFormattedComment($content, Comment::FORMAT_YAML, null))
+                                ->write('')
+                            ;
+                        }
+                        if ($_this->getConfig(CommentConfiguration::class)->getValue()) {
                             $writer
                                 ->write($_this->getFormatter()->getComment(Comment::FORMAT_YAML))
                                 ->write('')
@@ -70,17 +85,17 @@ class Table extends BaseTable
     {
         $namespace = $this->getNamespace(null, false);
 
-        $values = array(
+        $values = [
             'type' => 'entity',
-            'table' => $this->getConfig()->get(Formatter::CFG_PREFIX_TABLENAME).$this->getRawTableName(),
-        );
+            'table' => $this->getConfig(TableNamePrefixConfiguration::class)->getValue().$this->getRawTableName(),
+        ];
         // cache Mode
         if (!is_null($cacheMode = $this->getEntityCacheMode())) {
-            $values['cache'] = array();
+            $values['cache'] = [];
             $values['cache']['usage'] = $cacheMode;
         }
-        if ($this->getConfig()->get(Formatter::CFG_AUTOMATIC_REPOSITORY)) {
-            if ($repositoryNamespace = $this->getConfig()->get(Formatter::CFG_REPOSITORY_NAMESPACE)) {
+        if ($this->getConfig(AutomaticRepositoryConfiguration::class)->getValue()) {
+            if ($repositoryNamespace = $this->getConfig(RepositoryNamespaceConfiguration::class)->getValue()) {
                 $repositoryNamespace .= '\\';
             }
             $values['repositoryClass'] = $repositoryNamespace.$this->getModelName().'Repository';
@@ -99,8 +114,10 @@ class Table extends BaseTable
         if (count($lifecycleCallbacks = $this->getLifecycleCallbacks())) {
             $values['lifecycleCallbacks'] = $lifecycleCallbacks;
         }
+        /** @var \MwbExporter\Configuration\Indentation $indentation */
+        $indentation = $this->getConfig(IndentationConfiguration::class);
 
-        return new YAML(array($namespace => $values), array('indent' => $this->getConfig()->get(Formatter::CFG_INDENTATION), 'skip_null_value' => true));
+        return new YAML([$namespace => $values], ['indent' => strlen($indentation->getIndentation(1)), 'skip_null_value' => true]);
     }
 
     protected function getIndicesAsYAML(&$values, $type = 'indexes')
@@ -110,9 +127,9 @@ class Table extends BaseTable
                 case $type === 'indexes' && $index->isIndex():
                 case $type === 'uniqueConstraints' && $index->isUnique():
                     if (!isset($values[$type])) {
-                        $values[$type] = array();
+                        $values[$type] = [];
                     }
-                    $values[$type][$index->getName()] = array('columns' => $index->getColumnNames());
+                    $values[$type][$index->getName()] = ['columns' => $index->getColumnNames()];
                     break;
             }
         }
@@ -125,7 +142,7 @@ class Table extends BaseTable
         foreach ($this->getColumns() as $column) {
             if ($column->isPrimary()) {
                 if (!isset($values['id'])) {
-                    $values['id'] = array();
+                    $values['id'] = [];
                 }
                 $values['id'][$column->getColumnName()] = $column->asYAML();
             } else {
@@ -133,7 +150,7 @@ class Table extends BaseTable
                     continue;
                 }
                 if (!isset($values['fields'])) {
-                    $values['fields'] = array();
+                    $values['fields'] = [];
                 }
                 $values['fields'][$column->getColumnName()] = $column->asYAML();
             }
@@ -149,10 +166,10 @@ class Table extends BaseTable
             if ($this->isLocalForeignKeyIgnored($local)) {
                 continue;
             }
-            $targetEntity     = $local->getOwningTable()->getModelName();
+            $targetEntity = $local->getOwningTable()->getModelName();
             $targetEntityFQCN = $local->getOwningTable()->getModelNameAsFQCN($local->getReferencedTable()->getEntityNamespace());
-            $mappedBy         = $local->getReferencedTable()->getModelName();
-            $related          = $local->getForeignM2MRelatedName();
+            $mappedBy = $local->getReferencedTable()->getModelName();
+            $related = $local->getForeignM2MRelatedName();
 
             $this->getDocument()->addLog(sprintf('  Writing 1 <=> ? relation "%s"', $targetEntity));
 
@@ -162,30 +179,30 @@ class Table extends BaseTable
                 $type = 'oneToMany';
                 $relationName = lcfirst($this->getRelatedVarName($targetEntity, $related, true));
                 if (!isset($values[$type])) {
-                    $values[$type] = array();
+                    $values[$type] = [];
                 }
-                $values[$type][$relationName] = array_merge(array(
-                    'targetEntity'  => $targetEntity,
-                    'mappedBy'      => lcfirst($this->getRelatedVarName($mappedBy, $related)),
-                    'cascade'       => $this->getFormatter()->getCascadeOption($local->parseComment('cascade')),
-                    'fetch'         => $this->getFormatter()->getFetchOption($local->parseComment('fetch')),
+                $values[$type][$relationName] = array_merge([
+                    'targetEntity' => $targetEntity,
+                    'mappedBy' => lcfirst($this->getRelatedVarName($mappedBy, $related)),
+                    'cascade' => $this->getFormatter()->getCascadeOption($local->parseComment('cascade')),
+                    'fetch' => $this->getFormatter()->getFetchOption($local->parseComment('fetch')),
                     'orphanRemoval' => $this->getFormatter()->getBooleanOption($local->parseComment('orphanRemoval')),
-                ), $this->getJoins($local));
+                ], $this->getJoins($local));
             } else {
                 $this->getDocument()->addLog('  Relation considered as "1 <=> 1"');
 
                 $type = 'oneToOne';
                 $relationName = lcfirst($targetEntity);
                 if (!isset($values[$type])) {
-                    $values[$type] = array();
+                    $values[$type] = [];
                 }
-                $values[$type][$relationName] = array_merge(array(
+                $values[$type][$relationName] = array_merge([
                     'targetEntity' => $targetEntity,
-                    'mappedBy'   => lcfirst($this->getRelatedVarName($mappedBy, $related)),
-                ), $this->getJoins($local));
+                    'mappedBy' => lcfirst($this->getRelatedVarName($mappedBy, $related)),
+                ], $this->getJoins($local));
             }
             if (!is_null($cacheMode = $this->getFormatter()->getCacheOption($local->parseComment('cache')))) {
-              $values[$type][$relationName]['cache']['usage'] = $cacheMode;
+                $values[$type][$relationName]['cache']['usage'] = $cacheMode;
             }
         }
 
@@ -194,10 +211,10 @@ class Table extends BaseTable
             if ($this->isForeignKeyIgnored($foreign)) {
                 continue;
             }
-            $targetEntity     = $foreign->getReferencedTable()->getModelName();
+            $targetEntity = $foreign->getReferencedTable()->getModelName();
             $targetEntityFQCN = $foreign->getReferencedTable()->getModelNameAsFQCN($foreign->getOwningTable()->getEntityNamespace());
-            $inversedBy       = $foreign->getOwningTable()->getModelName();
-            $related          = $this->getRelatedName($foreign);
+            $inversedBy = $foreign->getOwningTable()->getModelName();
+            $related = $this->getRelatedName($foreign);
 
             $this->getDocument()->addLog(sprintf('  Writing N <=> ? relation "%s"', $targetEntity));
 
@@ -207,27 +224,27 @@ class Table extends BaseTable
                 $type = 'manyToOne';
                 $relationName = lcfirst($this->getRelatedVarName($targetEntity, $related));
                 if (!isset($values[$type])) {
-                    $values[$type] = array();
+                    $values[$type] = [];
                 }
-                $values[$type][$relationName] = array_merge(array(
-                    'targetEntity'  => $targetEntityFQCN,
-                    'inversedBy'    => lcfirst($this->getRelatedVarName($inversedBy, $related, true)),
-                ), $this->getJoins($foreign, false));
+                $values[$type][$relationName] = array_merge([
+                    'targetEntity' => $targetEntityFQCN,
+                    'inversedBy' => lcfirst($this->getRelatedVarName($inversedBy, $related, true)),
+                ], $this->getJoins($foreign, false));
             } else {
                 $this->getDocument()->addLog('  Relation considered as "1 <=> 1"');
 
                 $type = 'oneToOne';
                 $relationName = lcfirst($targetEntity);
                 if (!isset($values[$type])) {
-                    $values[$type] = array();
+                    $values[$type] = [];
                 }
-                $values[$type][$relationName] = array_merge(array(
-                    'targetEntity'  => $targetEntityFQCN,
-                    'inversedBy'    => $foreign->isUnidirectional() ? null : lcfirst($this->getRelatedVarName($inversedBy, $related)),
-                ), $this->getJoins($foreign, false));
+                $values[$type][$relationName] = array_merge([
+                    'targetEntity' => $targetEntityFQCN,
+                    'inversedBy' => $foreign->isUnidirectional() ? null : lcfirst($this->getRelatedVarName($inversedBy, $related)),
+                ], $this->getJoins($foreign, false));
             }
             if (!is_null($cacheMode = $this->getFormatter()->getCacheOption($foreign->parseComment('cache')))) {
-              $values[$type][$relationName]['cache']['usage'] = $cacheMode;
+                $values[$type][$relationName]['cache']['usage'] = $cacheMode;
             }
         }
 
@@ -240,15 +257,20 @@ class Table extends BaseTable
         foreach ($this->getTableM2MRelations() as $relation) {
             $fk1 = $relation['reference'];
             $isOwningSide = $this->getFormatter()->isOwningSide($relation, $fk2);
-            $mappings = array(
+            $mappings = [
                 'targetEntity' => $relation['refTable']->getModelNameAsFQCN($this->getEntityNamespace()),
-                'mappedBy'     => null,
-                'inversedBy'   => lcfirst($this->getPluralModelName()),
-                'cascade'      => $this->getFormatter()->getCascadeOption($fk1->parseComment('cascade')),
-                'fetch'        => $this->getFormatter()->getFetchOption($fk1->parseComment('fetch')),
-            );
+                'mappedBy' => null,
+                'inversedBy' => lcfirst($this->getPluralModelName()),
+                'cascade' => $this->getFormatter()->getCascadeOption($fk1->parseComment('cascade')),
+                'fetch' => $this->getFormatter()->getFetchOption($fk1->parseComment('fetch')),
+            ];
 
-            $relationName = $this->getFormatter()->getInflector()->camelize($this->pluralize($relation['refTable']->getRawTableName()));
+            $relationName = $this->pluralize($relation['refTable']->getRawTableName());
+            /** @var \MwbExporter\Configuration\Language $lang */
+            $lang = $this->getConfig(LanguageConfiguration::class);
+            if ($inflector = $lang->getInflector()) {
+                $relationName = $inflector->camelize($relationName);
+            }
 
             // if this is the owning side, also output the JoinTable Annotation
             // otherwise use "mappedBy" feature
@@ -259,17 +281,17 @@ class Table extends BaseTable
 
                 $type = 'manyToMany';
                 if (!isset($values[$type])) {
-                    $values[$type] = array();
+                    $values[$type] = [];
                 }
-                $values[$type][$relationName] = array_merge($mappings, array(
-                    'joinTable' => array(
-                        'name'               => $fk1->getOwningTable()->getRawTableName(),
-                        'joinColumns'        => $this->convertJoinColumns($this->getJoins($fk1, false)),
+                $values[$type][$relationName] = array_merge($mappings, [
+                    'joinTable' => [
+                        'name' => $fk1->getOwningTable()->getRawTableName(),
+                        'joinColumns' => $this->convertJoinColumns($this->getJoins($fk1, false)),
                         'inverseJoinColumns' => $this->convertJoinColumns($this->getJoins($fk2, false)),
-                    ),
-                ));
+                    ],
+                ]);
                 if (!is_null($cacheMode = $this->getFormatter()->getCacheOption($fk1->parseComment('cache')))) {
-                  $values[$type][$relationName]['cache']['usage'] = $cacheMode;
+                    $values[$type][$relationName]['cache']['usage'] = $cacheMode;
                 }
             } else {
                 if ($fk2->isUnidirectional()) {
@@ -280,11 +302,11 @@ class Table extends BaseTable
 
                 $type = 'manyToMany';
                 if (!isset($values[$type])) {
-                    $values[$type] = array();
+                    $values[$type] = [];
                 }
                 $values[$type][$relationName] = $mappings;
                 if (!is_null($cacheMode = $this->getFormatter()->getCacheOption($fk2->parseComment('cache')))) {
-                  $values[$type][$relationName]['cache']['usage'] = $cacheMode;
+                    $values[$type][$relationName]['cache']['usage'] = $cacheMode;
                 }
             }
         }
@@ -292,9 +314,9 @@ class Table extends BaseTable
         return $this;
     }
 
-    protected function convertJoinColumns($joins = array())
+    protected function convertJoinColumns($joins = [])
     {
-        $result = array();
+        $result = [];
         foreach ($joins as $join) {
             if (!isset($join['name'])) {
                 continue;
@@ -316,20 +338,20 @@ class Table extends BaseTable
      */
     protected function getJoins(ForeignKey $fkey, $owningSide = true)
     {
-        $joins = array();
+        $joins = [];
         $lcols = $owningSide ? $fkey->getForeigns() : $fkey->getLocals();
         $fcols = $owningSide ? $fkey->getLocals() : $fkey->getForeigns();
         $onDelete = $this->getFormatter()->getDeleteRule($fkey->getParameters()->get('deleteRule'));
         for ($i = 0; $i < count($lcols); $i++) {
-            $joins[] = array(
-                'name'                  => $lcols[$i]->getColumnName(),
-                'referencedColumnName'  => $fcols[$i]->getColumnName(),
-                'nullable'              => $lcols[$i]->getNullableValue(),
-                'onDelete'              => $onDelete,
-            );
+            $joins[] = [
+                'name' => $lcols[$i]->getColumnName(),
+                'referencedColumnName' => $fcols[$i]->getColumnName(),
+                'nullable' => $lcols[$i]->getNullableValue(),
+                'onDelete' => $onDelete,
+            ];
         }
 
-        return count($joins) > 1 ? array('joinColumns' => $this->convertJoinColumns($joins)) : array('joinColumn' => $joins[0]);
+        return count($joins) > 1 ? ['joinColumns' => $this->convertJoinColumns($joins)] : ['joinColumn' => $joins[0]];
     }
 
     /**
@@ -338,6 +360,6 @@ class Table extends BaseTable
      */
     protected function getVars()
     {
-        return array_merge(parent::getVars(), array('%entity-fqcn%' => str_replace('\\', '.', $this->getModelNameAsFQCN())));
+        return array_merge(parent::getVars(), ['%entity-fqcn%' => str_replace('\\', '.', $this->getModelNameAsFQCN())]);
     }
 }

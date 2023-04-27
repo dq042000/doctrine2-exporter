@@ -4,7 +4,7 @@
  * The MIT License
  *
  * Copyright (c) 2010 Johannes Mueller <circus2(at)web.de>
- * Copyright (c) 2012-2014 Toha <tohenk@yahoo.com>
+ * Copyright (c) 2012-2023 Toha <tohenk@yahoo.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,21 +27,24 @@
 
 namespace MwbExporter\Formatter\Doctrine2\Yaml;
 
+use MwbExporter\Configuration\Filename as FilenameConfiguration;
+use MwbExporter\Configuration\Indentation as IndentationConfiguration;
+use MwbExporter\Formatter\Doctrine2\Yaml\Configuration\TableNameExtend as TableNameExtendConfiguration;
 use MwbExporter\Formatter\Doctrine2\Formatter as BaseFormatter;
 use MwbExporter\Model\Base;
 
 class Formatter extends BaseFormatter
 {
-    const CFG_EXTEND_TABLENAME_WITH_SCHEMA = 'extendTableNameWithSchemaName';
-
     protected function init()
     {
         parent::init();
-        $this->addConfigurations(array(
-            static::CFG_INDENTATION                   => 4,
-            static::CFG_FILENAME                      => '%entity%.dcm.%extension%',
-            static::CFG_EXTEND_TABLENAME_WITH_SCHEMA  => false,
-        ));
+        $this->getConfigurations()
+            ->add(new TableNameExtendConfiguration())
+            ->merge([
+                IndentationConfiguration::class => 4,
+                FilenameConfiguration::class => '%entity%.dcm.%extension%',
+            ], true)
+        ;
     }
 
     /**
@@ -79,5 +82,15 @@ class Formatter extends BaseFormatter
     public function getFileExtension()
     {
         return 'yml';
+    }
+
+    /**
+     * Get configuration scope.
+     *
+     * @return string
+     */
+    public static function getScope()
+    {
+        return 'Doctrine 2.0 Yaml';
     }
 }

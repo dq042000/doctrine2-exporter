@@ -4,7 +4,7 @@
  * The MIT License
  *
  * Copyright (c) 2010 Johannes Mueller <circus2(at)web.de>
- * Copyright (c) 2012-2014 Toha <tohenk@yahoo.com>
+ * Copyright (c) 2012-2023 Toha <tohenk@yahoo.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,10 +28,19 @@
 namespace MwbExporter\Formatter\Doctrine2\Annotation\Model;
 
 use MwbExporter\Formatter\DatatypeConverterInterface;
-use MwbExporter\Formatter\Doctrine2\Model\Column as BaseColumn;
+use MwbExporter\Formatter\Doctrine2\Configuration\GeneratedValueStrategy as GeneratedValueStrategyConfiguration;
+use MwbExporter\Formatter\Doctrine2\Annotation\Configuration\BehavioralExtension as BehavioralExtensionConfiguration;
+use MwbExporter\Formatter\Doctrine2\Annotation\Configuration\Typehint as TypehintConfiguration;
+use MwbExporter\Formatter\Doctrine2\Annotation\Configuration\TypehintArgument as TypehintArgumentConfiguration;
+use MwbExporter\Formatter\Doctrine2\Annotation\Configuration\TypehintReturnValue as TypehintReturnValueConfiguration;
+use MwbExporter\Formatter\Doctrine2\Annotation\Configuration\TypehintSkip as TypehintSkipConfiguration;
 use MwbExporter\Formatter\Doctrine2\Annotation\Formatter;
+use MwbExporter\Formatter\Doctrine2\Model\Column as BaseColumn;
 use MwbExporter\Writer\WriterInterface;
 
+/**
+ * @method \MwbExporter\Formatter\Doctrine2\Annotation\Model\Table getTable()
+ */
 class Column extends BaseColumn
 {
     public function getColumnName($raw = true)
@@ -41,7 +50,8 @@ class Column extends BaseColumn
         return $raw ? $name : $this->getNaming($name);
     }
 
-    private function getStringDefaultValue() {
+    private function getStringDefaultValue()
+    {
         $defaultValue = $this->getDefaultValue();
         if (is_null($defaultValue) || 'CURRENT_TIMESTAMP' == $defaultValue) {
             $defaultValue = '';
@@ -61,7 +71,7 @@ class Column extends BaseColumn
     public function writeVar(WriterInterface $writer)
     {
         if (!$this->isIgnored()) {
-            $useBehavioralExtensions = $this->getConfig()->get(Formatter::CFG_USE_BEHAVIORAL_EXTENSIONS);
+            $useBehavioralExtensions = $this->getConfig(BehavioralExtensionConfiguration::class)->getValue();
             $isBehavioralColumn = strstr($this->getTable()->getName(), '_img') && $useBehavioralExtensions;
             $comment = $this->getComment();
             $columnName = $this->getColumnName(false);
@@ -72,27 +82,43 @@ class Column extends BaseColumn
             $writer
                 ->write('/**')
                 ->writeIf($comment, $comment)
-                ->writeIf($this->isPrimary,
-                        ' * '.$this->getTable()->getAnnotation('Id'))
-                ->writeIf($useBehavioralExtensions && $this->getColumnName() === 'created_at',
-                        ' * @Gedmo\Timestampable(on="create")')
-                ->writeIf($useBehavioralExtensions && $this->getColumnName() === 'updated_at',
-                        ' * @Gedmo\Timestampable(on="update")')
+                ->writeIf(
+                    $this->isPrimary,
+                    ' * '.$this->getTable()->getAnnotation('Id')
+                )
+                ->writeIf(
+                    $useBehavioralExtensions && $this->getColumnName() === 'created_at',
+                    ' * @Gedmo\Timestampable(on="create")'
+                )
+                ->writeIf(
+                    $useBehavioralExtensions && $this->getColumnName() === 'updated_at',
+                    ' * @Gedmo\Timestampable(on="update")'
+                )
                 ->write(' * '.$this->getTable()->getAnnotation('Column', $this->asAnnotation()))
                 ->writeIf($this->asEncrypted() !== null,
                         ' * '.$this->asEncrypted())
                 ->writeIf($this->asHashed() !== null,
                         ' * '.$this->asHashed())
-                ->writeIf($this->isAutoIncrement(),
-                        ' * '.$this->getTable()->getAnnotation('GeneratedValue', array('strategy' => strtoupper($this->getConfig()->get(Formatter::CFG_GENERATED_VALUE_STRATEGY)))))
-                ->writeIf($isBehavioralColumn && strstr($this->getColumnName(), 'path'),
-                        ' * @Gedmo\UploadableFilePath')
-                ->writeIf($isBehavioralColumn && strstr($this->getColumnName(), 'name'),
-                        ' * @Gedmo\UploadableFileName')
-                ->writeIf($isBehavioralColumn && strstr($this->getColumnName(), 'mime'),
-                        ' * @Gedmo\UploadableFileMimeType')
-                ->writeIf($isBehavioralColumn && strstr($this->getColumnName(), 'size'),
-                        ' * @Gedmo\UploadableFileSize')
+                ->writeIf(
+                    $this->isAutoIncrement(),
+                    ' * '.$this->getTable()->getAnnotation('GeneratedValue', ['strategy' => strtoupper($this->getConfig(GeneratedValueStrategyConfiguration::class)->getValue())])
+                )
+                ->writeIf(
+                    $isBehavioralColumn && strstr($this->getColumnName(), 'path'),
+                    ' * @Gedmo\UploadableFilePath'
+                )
+                ->writeIf(
+                    $isBehavioralColumn && strstr($this->getColumnName(), 'name'),
+                    ' * @Gedmo\UploadableFileName'
+                )
+                ->writeIf(
+                    $isBehavioralColumn && strstr($this->getColumnName(), 'mime'),
+                    ' * @Gedmo\UploadableFileMimeType'
+                )
+                ->writeIf(
+                    $isBehavioralColumn && strstr($this->getColumnName(), 'size'),
+                    ' * @Gedmo\UploadableFileSize'
+                )
                 ->write(' */')
                 ->write('protected $'.$columnName.$this->getStringDefaultValue().';')
                 ->write('')
@@ -112,7 +138,7 @@ class Column extends BaseColumn
             $nativeType = $converter->getNativeType($converter->getMappedType($this));
             $columnName = $this->getColumnName(false);
 
-            $typehints = array(
+            $typehints = [
                 'set_phpdoc_arg' => $this->typehint($nativeType, !$this->isNotNull()),
                 'set_phpdoc_return' => $this->typehint($table->getNamespace(), false),
                 'set_arg' => $this->paramTypehint($nativeType, !$this->isNotNull()),
@@ -120,7 +146,7 @@ class Column extends BaseColumn
 
                 'get_phpdoc' => $this->typehint($nativeType, !$this->isNotNull()),
                 'get_return' => $this->returnTypehint($nativeType, null === $this->getDefaultValue() ? true : !$this->isNotNull()),
-            );
+            ];
 
             $writer
                 // setter
@@ -134,9 +160,9 @@ class Column extends BaseColumn
                 ->write('public function set'.$this->getBeautifiedColumnName().'('.$typehints['set_arg'].'$'.$columnName.')'.$typehints['set_return'])
                 ->write('{')
                 ->indent()
-                    ->write('$this->'.$columnName.' = $'.$columnName.';')
-                    ->write('')
-                    ->write('return $this;')
+                ->write('$this->'.$columnName.' = $'.$columnName.';')
+                ->write('')
+                ->write('return $this;')
                 ->outdent()
                 ->write('}')
                 ->write('')
@@ -149,7 +175,7 @@ class Column extends BaseColumn
                 ->write('public function '.$this->getColumnGetterName().'()'.$typehints['get_return'])
                 ->write('{')
                 ->indent()
-                    ->write('return $this->'.$columnName.';')
+                ->write('return $this->'.$columnName.';')
                 ->outdent()
                 ->write('}')
                 ->write('')
@@ -166,10 +192,10 @@ class Column extends BaseColumn
     {
         $comment = $this->getComment(false);
         $columnName = $this->getColumnName(false);
-        $attributes = array(
+        $attributes = [
             'name' => ($quotedColumnName = $this->getTable()->quoteIdentifier($this->getColumnName())) !== $columnName ? $quotedColumnName : null,
             'type' => $this->getFormatter()->getDatatypeConverter()->getMappedType($this),
-        );
+        ];
         if (($length = $this->parameters->get('length')) && ($length != -1)) {
             $attributes['length'] = (int) $length;
         }
@@ -181,9 +207,9 @@ class Column extends BaseColumn
             $attributes['nullable'] = $this->getNullableValue();
         }
 
-        $attributes['options'] = array();
+        $attributes['options'] = [];
         if ($this->isUnsigned()) {
-            $attributes['options'] = array('unsigned' => true);
+            $attributes['options'] = ['unsigned' => true];
         }
 
         if ('json' === $attributes['type']) {
@@ -247,8 +273,8 @@ class Column extends BaseColumn
     protected function typehint($type, $nullable)
     {
         if (strlen($type)) {
-            $type = strtr($type, array('integer' => 'int', 'boolean' => 'bool'));
-            if ($this->getConfig()->get(Formatter::CFG_PHP7_TYPEHINTS)) {
+            $type = strtr($type, ['integer' => 'int', 'boolean' => 'bool']);
+            if ($this->getConfig(TypehintConfiguration::class)->getValue()) {
                 if ($nullable || '\DateTime' === $type) {
                     $type = '?'.$type;
                 }
@@ -260,13 +286,13 @@ class Column extends BaseColumn
 
     protected function isTypehintSkipped()
     {
-        return in_array($this->getTable()->getName().'.'.$this->getColumnName(), $this->getConfig()->get(Formatter::CFG_PHP7_SKIPPED_COLUMNS_TYPEHINTS));
+        return in_array($this->getTable()->getName().'.'.$this->getColumnName(), $this->getConfig(TypehintSkipConfiguration::class)->getValue());
     }
 
     protected function paramTypehint($type, $nullable)
     {
-        if ($this->getConfig()->get(Formatter::CFG_PHP7_TYPEHINTS) &&
-            $this->getConfig()->get(Formatter::CFG_PHP7_ARG_TYPEHINTS) &&
+        if ($this->getConfig(TypehintConfiguration::class)->getValue() &&
+            $this->getConfig(TypehintArgumentConfiguration::class)->getValue() &&
             !$this->isTypehintSkipped() &&
             strlen($type)) {
             return $this->typehint($type, $nullable).' ';
@@ -275,8 +301,8 @@ class Column extends BaseColumn
 
     protected function returnTypehint($type, $nullable)
     {
-        if ($this->getConfig()->get(Formatter::CFG_PHP7_TYPEHINTS) &&
-            $this->getConfig()->get(Formatter::CFG_PHP7_RETURN_TYPEHINTS) &&
+        if ($this->getConfig(TypehintConfiguration::class)->getValue() &&
+            $this->getConfig(TypehintReturnValueConfiguration::class)->getValue() &&
             !$this->isTypehintSkipped() &&
             strlen($type)) {
             return ': '.$this->typehint($type, $nullable);

@@ -1,49 +1,46 @@
 {
-    "name": "dq042000/doctrine2-exporter",
-    "type": "library",
-    "description": "MySQL Workbench Schema Exporter for Doctrine 2",
-    "keywords": [
-        "mysql",
-        "mysql workbench",
-        "database",
-        "cli",
-        "doctrine"
-    ],
-    "homepage": "https://github.com/dq042000/doctrine2-exporter",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Johannes Mueller",
-            "email": "circus2@web.de",
-            "role": "Developer"
-        },
-        {
-            "name": "Toha",
-            "email": "tohenk@yahoo.com",
-            "role": "Developer"
-        },
-        {
-            "name": "Robert Vock",
-            "email": "robertvock82@gmail.com",
-            "role": "Developer"
-        }
-    ],
-    "require": {
-        "php": ">=5.4.0",
-        "dq042000/mysql-workbench-schema-exporter": "^3.1"
-    },
-    "autoload": {
-        "psr-4": {
-            "MwbExporter\\Formatter\\Doctrine2\\": "lib/"
-        }
-    },
-    "extra": {
-        "mysql-workbench-schema-exporter": {
-            "formatters": {
-                "doctrine2-annotation": "MwbExporter\\Formatter\\Doctrine2\\Annotation\\Formatter",
-                "doctrine2-yaml": "MwbExporter\\Formatter\\Doctrine2\\Yaml\\Formatter",
-                "doctrine2-zf2inputfilterannotation": "MwbExporter\\Formatter\\Doctrine2\\ZF2InputFilterAnnotation\\Formatter"
-            }
-        }
-    }
+	"name" : "dq042000/doctrine2-exporter",
+	"type" : "library",
+	"description" : "MySQL Workbench Schema Exporter for Doctrine 2",
+	"keywords" : [
+		"mysql",
+		"mysql workbench",
+		"database",
+		"cli",
+		"doctrine"
+	],
+	"homepage" : "https://github.com/dq042000/doctrine2-exporter",
+	"license" : "MIT",
+	"authors" : [{
+			"name" : "Johannes Mueller",
+			"email" : "circus2@web.de",
+			"role" : "Developer"
+		}, {
+			"name" : "Toha",
+			"email" : "tohenk@yahoo.com",
+			"role" : "Developer"
+		}, {
+			"name" : "Robert Vock",
+			"email" : "robertvock82@gmail.com",
+			"role" : "Developer"
+		}
+	],
+	"require" : {
+		"php" : ">=7.2",
+		"dq042000/mysql-workbench-schema-exporter": "dev-master"
+	},
+	"autoload" : {
+		"psr-4" : {
+			"MwbExporter\\Formatter\\Doctrine2\\" : "lib/"
+		}
+	},
+	"extra": {
+		"mysql-workbench-schema-exporter" : {
+			"formatters" : {
+				"doctrine2-annotation" : "MwbExporter\\Formatter\\Doctrine2\\Annotation\\Formatter",
+				"doctrine2-yaml" : "MwbExporter\\Formatter\\Doctrine2\\Yaml\\Formatter",
+				"doctrine2-zf2inputfilterannotation" : "MwbExporter\\Formatter\\Doctrine2\\ZF2InputFilterAnnotation\\Formatter"
+			}
+		}
+	}
 }
