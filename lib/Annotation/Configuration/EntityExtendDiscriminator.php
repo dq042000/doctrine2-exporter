@@ -40,6 +40,6 @@ class EntityExtendDiscriminator extends Configuration
     protected function initialize()
     {
         $this->category = 'doctrineConfiguration';
-        $this->defaultValue = true;
+        $this->defaultValue = false;
     }
 }
