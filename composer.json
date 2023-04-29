@@ -27,7 +27,7 @@
 	],
 	"require" : {
 		"php" : ">=7.2",
-		"dq042000/mysql-workbench-schema-exporter": "^4.0"
+		"dq042000/mysql-workbench-schema-exporter": "dev-master"
 	},
 	"autoload" : {
 		"psr-4" : {
