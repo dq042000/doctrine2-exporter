@@ -1133,7 +1133,7 @@ class Table extends BaseTable
                         $writer->write('$%s->remove%s($this);', $_this->getNaming($relation['refTable']->getName()), $_this->getModelName());
                     }
                 })
-                ->write('$this->'.$this->getNaming($relation['refTable']->getPluralName()).'->removeElement($'.$this->getNaming($relation['refTable']->getModelName()).');')
+                ->write('$this->'.$this->getNaming($relation['refTable']->getPluralName()).'->removeElement($'.$this->getNaming($relation['refTable']->getPluralName()).');')
                 ->write('')
                 ->write('return $this;')
                 ->outdent()
