@@ -775,7 +775,7 @@ class Table extends BaseTable
     public function writeCurrentTimestampConstructor(WriterInterface $writer)
     {
         foreach ($this->getColumns() as $column) {
-            if ($column->isDefaultValueCurrentTimestamp()) {
+            if ('CURRENT_TIMESTAMP' === $column->getDefaultValue()) {
                 $writer->write('$this->%s = new \DateTime(\'now\');', $column->getColumnName(false));
             }
         }
