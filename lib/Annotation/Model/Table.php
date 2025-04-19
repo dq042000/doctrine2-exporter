@@ -309,7 +309,7 @@ class Table extends BaseTable
                     $this->getAnnotation('Entity', ['repositoryClass' => $this->getConfig(AutomaticRepositoryConfiguration::class)->getValue() ? $repositoryNamespace.$this->getModelName().'Repository' : null])
                 )
                 ->writeIf($cacheMode, $this->getAnnotation('Cache', [$cacheMode]))
-                ->write($this->getAnnotation('Table', ['name' => $this->quoteIdentifier($this->getRawTableName()), 'indexes' => $this->getIndexesAnnotation('Index'), 'uniqueConstraints' => $this->getIndexesAnnotation('UniqueConstraint')], true))
+                ->write($this->getAnnotation('Table', ['name' => $this->quoteIdentifier($this->getRawTableName()), 'indexes' => $this->getIndexesAnnotation('Index'), 'uniqueConstraints' => $this->getIndexesAnnotation('UniqueConstraint'), 'options' => $options], true))
                 ->writeIf(
                     $extendableEntityHasDiscriminator,
                     $this->getAnnotation('InheritanceType', ['SINGLE_TABLE'])
